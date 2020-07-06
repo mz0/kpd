@@ -1,4 +1,4 @@
-package pvk
+package mz
 
 import java.io.File
 import java.io.IOException
@@ -14,6 +14,7 @@ class App {
     val version = "0.1"
 }
 
+@kotlin.ExperimentalUnsignedTypes
 fun ByteArray.getUIntAt(idx: Int): UInt =
    if (isForeignByteOrder!!)
         ((this[idx+3].toUInt() and 0xFFu) shl 24) or
@@ -24,7 +25,7 @@ fun ByteArray.getUIntAt(idx: Int): UInt =
         ((this[idx+1].toUInt() and 0xFFu) shl 16) or
         ((this[idx+2].toUInt() and 0xFFu) shl 8)  or
          (this[idx+3].toUInt() and 0xFFu)
-
+@kotlin.ExperimentalUnsignedTypes
 fun ByteArray.toHexString() = asUByteArray().joinToString("") { it.toString(16).padStart(2, '0') }
 /*
 https://wiki.wireshark.org/Development/LibpcapFileFormat

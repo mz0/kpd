@@ -19,5 +19,5 @@ dependencies {
 }
 
 application {
-    mainClassName = 'pvk.AppKt'
+    mainClassName = 'mz.AppKt'
 }

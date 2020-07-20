@@ -2,10 +2,9 @@ package mz
 
 import java.io.IOException
 import java.io.InputStream
-import kotlin.system.exitProcess
 
-class PcapFile {
-    fun doFile(fis: InputStream, pcapName: String) {
+class PcapStream {
+    fun digest(fis: InputStream, pcapName: String) {
         var bb = ByteArray(24)
 
         var bytesRead = fis.read(bb, 0, 24)

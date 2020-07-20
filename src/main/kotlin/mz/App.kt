@@ -7,7 +7,7 @@ import java.nio.file.Path
 import java.util.Properties
 import kotlin.system.exitProcess
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
-import org.tukaani.xz.XZInputStream
+import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
 
 class App {
     companion object {
@@ -70,13 +70,13 @@ class App {
 
             if (it.name.matches(pcapBare)) {
                 log.trace("Found ${it.name}")
-                PcapFile().doFile(FileInputStream(it), it.name)
+                PcapStream().digest(FileInputStream(it), it.name)
             } else if (it.name.matches(pcapXz)) {
-                log.warn("Found XZ compressed file ${it.name}!")
-                PcapFile().doFile(XZInputStream(BufferedInputStream(FileInputStream(it))), it.name)
+                log.info("Found XZ compressed file ${it.name}")
+                PcapStream().digest(XZCompressorInputStream(BufferedInputStream(FileInputStream(it))), it.name)
             } else if (it.name.matches(pcapGz)) {
-                log.warn("Found GZ compressed file ${it.name}!")
-                PcapFile().doFile(GzipCompressorInputStream(BufferedInputStream(FileInputStream(it))), it.name)
+                log.info("Found GZ compressed file ${it.name}")
+                PcapStream().digest(GzipCompressorInputStream(BufferedInputStream(FileInputStream(it))), it.name)
             }
         }
     }

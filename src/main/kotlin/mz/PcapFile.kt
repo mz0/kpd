@@ -1,29 +1,21 @@
 package mz
 
-import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import kotlin.system.exitProcess
 
 class PcapFile {
-    fun doFile(pcapName: String) {
-        var filePos = 0
-        val f = File(pcapName)
-        val fis = File(pcapName).inputStream()
-        val flen = f.length()
+    fun doFile(fis: InputStream, pcapName: String) {
         var bb = ByteArray(24)
 
-        if (flen < 24) {
-            println("File has less than 24 bytes. Exiting"); exitProcess(1)
-        }
         var bytesRead = fis.read(bb, 0, 24)
         if (bytesRead > 23 && isPcapFile(bb.sliceArray(0..3))) {
-            println("file ${pcapName} is a file: ${f.isFile}, has $flen bytes, read: $bytesRead Bytes.\n" +
+            App.log.info("file ${pcapName}, read: $bytesRead Bytes.\n" +
                     "magic is OK. nanosecond timestamps: ${nanoTimestamped}; reverse byte-order: $isForeignByteOrder")
             App.log.info("Raw file header: ${bb.toHexString()}")
             println(examine(fis))
         } else {
-            println("PCAP magic not found")
+            App.log.error("PCAP magic not found")
         }
     }
 }

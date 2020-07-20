@@ -1,14 +1,13 @@
 package mz
 
-import mz.App.Companion.log
 import org.apache.logging.log4j.LogManager
-import java.io.File
-import java.io.FileInputStream
-import java.io.IOException
+import java.io.*
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Properties
 import kotlin.system.exitProcess
+import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
+import org.tukaani.xz.XZInputStream
 
 class App {
     companion object {
@@ -43,11 +42,13 @@ class App {
         }
         dirList
     }
+
     fun init(): App {
         configProps.forEach { (k, v) -> log.info("$k : $v") }
         if (this.dirs.isEmpty()) log.error("No dirs to process!")
         return this
     }
+
     fun processDirs() {
         dirs.forEach { d ->
             if (d == null) {
@@ -57,19 +58,26 @@ class App {
             }
         }
     }
+    private val pcapBare = ".*\\.pcap$".toRegex()
+    private val pcapXz = ".*\\.pcap\\.xz$".toRegex()
+    private val pcapGz = ".*\\.pcap\\.gz$".toRegex()
     private fun processDir(dir: Path) {
-        Files.walk(dir, 1).forEach fit@{ it ->
-            val f = it.toFile();
-            if (!f.isFile) return@fit
-            if (it.fileName.toString().matches(".*\\.pcap$".toRegex())) {
-                log.info("Found ${it.fileName}")
-            }
-
-            if (f.length() < 24) {
-                log.error("File ${f.name} has less than 24 bytes.");
+        dir.toFile().listFiles{f -> f.isFile}.forEach fit@{ it: File ->
+            if (it.length() < 24) {
+                log.error("File ${it.name} has less than 24 bytes.");
                 return@fit
             }
-            PcapFile().doFile(FileInputStream(f), f.name)
+
+            if (it.name.matches(pcapBare)) {
+                log.trace("Found ${it.name}")
+                PcapFile().doFile(FileInputStream(it), it.name)
+            } else if (it.name.matches(pcapXz)) {
+                log.warn("Found XZ compressed file ${it.name}!")
+                PcapFile().doFile(XZInputStream(BufferedInputStream(FileInputStream(it))), it.name)
+            } else if (it.name.matches(pcapGz)) {
+                log.warn("Found GZ compressed file ${it.name}!")
+                PcapFile().doFile(GzipCompressorInputStream(BufferedInputStream(FileInputStream(it))), it.name)
+            }
         }
     }
 }

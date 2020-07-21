@@ -17,8 +17,15 @@ class App {
     val configFile = "application.properties"
     val configProps: Properties by lazy {
         val tmpProp = Properties()
+        log.info("Current dir (user.dir): ${System.getProperty("user.dir")}")
         try {
-            tmpProp.load(App::class.java.classLoader.getResource(configFile).openStream())
+            if (File(configFile).isFile) { // from current dir
+                log.info("$configFile found!")
+                tmpProp.load(FileInputStream(configFile))
+            } else {
+                log.warn("loading default $configFile")
+                tmpProp.load(App::class.java.classLoader.getResource(configFile).openStream())
+            }
         } catch (e: IOException) {
             log.error("Error loading ${configFile}: ${e.message}")
             exitProcess(1)
@@ -64,18 +71,15 @@ class App {
     private fun processDir(dir: Path) {
         dir.toFile().listFiles{f -> f.isFile}.forEach fit@{ it: File ->
             if (it.length() < 24) {
-                log.error("File ${it.name} has less than 24 bytes.");
+                log.warn("File ${it.name} has less than 24 bytes.");
                 return@fit
             }
 
             if (it.name.matches(pcapBare)) {
-                log.trace("Found ${it.name}")
                 PcapStream().digest(FileInputStream(it), it.name)
             } else if (it.name.matches(pcapXz)) {
-                log.info("Found XZ compressed file ${it.name}")
                 PcapStream().digest(XZCompressorInputStream(BufferedInputStream(FileInputStream(it))), it.name)
             } else if (it.name.matches(pcapGz)) {
-                log.info("Found GZ compressed file ${it.name}")
                 PcapStream().digest(GzipCompressorInputStream(BufferedInputStream(FileInputStream(it))), it.name)
             }
         }

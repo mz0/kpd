@@ -8,6 +8,7 @@ import java.util.Properties
 import kotlin.system.exitProcess
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
+//import org.tukaani.xz.XZ
 
 class App {
     companion object {
@@ -20,10 +21,10 @@ class App {
         log.info("Current dir (user.dir): ${System.getProperty("user.dir")}")
         try {
             if (File(configFile).isFile) { // from current dir
-                log.info("$configFile found!")
+                log.info("Reading $configFile")
                 tmpProp.load(FileInputStream(configFile))
             } else {
-                log.warn("loading default $configFile")
+                log.warn("Reading built-in $configFile")
                 tmpProp.load(App::class.java.classLoader.getResource(configFile).openStream())
             }
         } catch (e: IOException) {
@@ -51,6 +52,7 @@ class App {
     }
 
     fun init(): App {
+        log.info("Configuration:")
         configProps.forEach { (k, v) -> log.info("$k : $v") }
         if (this.dirs.isEmpty()) log.error("No dirs to process!")
         return this

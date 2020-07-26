@@ -1,5 +1,6 @@
 package mz
 
+import io.pkts.Pcap
 import org.apache.logging.log4j.LogManager
 import java.io.*
 import java.nio.file.Files
@@ -8,7 +9,6 @@ import java.util.Properties
 import kotlin.system.exitProcess
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
 import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
-//import org.tukaani.xz.XZ
 
 class App {
     companion object {
@@ -70,6 +70,7 @@ class App {
     private val pcapBare = ".*\\.pcap$".toRegex()
     private val pcapXz = ".*\\.pcap\\.xz$".toRegex()
     private val pcapGz = ".*\\.pcap\\.gz$".toRegex()
+    val pd = PcapDigester();
     private fun processDir(dir: Path) {
         dir.toFile().listFiles{f -> f.isFile}.forEach fit@{ it: File ->
             if (it.length() < 24) {
@@ -78,12 +79,13 @@ class App {
             }
 
             if (it.name.matches(pcapBare)) {
-                PcapStream().digest(FileInputStream(it), it.name)
+                Pcap.openStream(FileInputStream(it)).loop(pd)
             } else if (it.name.matches(pcapXz)) {
-                PcapStream().digest(XZCompressorInputStream(BufferedInputStream(FileInputStream(it))), it.name)
+                Pcap.openStream(XZCompressorInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
             } else if (it.name.matches(pcapGz)) {
-                PcapStream().digest(GzipCompressorInputStream(BufferedInputStream(FileInputStream(it))), it.name)
+                Pcap.openStream(GzipCompressorInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
             }
+            System.out.println("File ${it.name} - ${pd.getDigest()}")
         }
     }
 }

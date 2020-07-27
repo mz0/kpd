@@ -74,18 +74,23 @@ class App {
     private fun processDir(dir: Path) {
         dir.toFile().listFiles{f -> f.isFile}.forEach fit@{ it: File ->
             if (it.length() < 24) {
-                log.warn("File ${it.name} has less than 24 bytes.");
+                log.warn("File ${it.name} has less than 24 bytes.")
                 return@fit
             }
-
-            if (it.name.matches(pcapBare)) {
-                Pcap.openStream(FileInputStream(it)).loop(pd)
-            } else if (it.name.matches(pcapXz)) {
-                Pcap.openStream(XZCompressorInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
-            } else if (it.name.matches(pcapGz)) {
-                Pcap.openStream(GzipCompressorInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
+            try {
+                if (it.name.matches(pcapBare)) {
+                    Pcap.openStream(FileInputStream(it)).loop(pd)
+                } else if (it.name.matches(pcapXz)) {
+                    Pcap.openStream(XZCompressorInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
+                } else if (it.name.matches(pcapGz)) {
+                    Pcap.openStream(GzipCompressorInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
+                }
+            } catch (e: IndexOutOfBoundsException) {
+                // io.pkts.buffer.BoundedInputStreamBuffer.readBytes() when reading a truncated PCAP may
+                // result in e.g. 'Not enough bytes left in the stream. Wanted 60 but only read 16'
+                log.warn("Reading ${it.name}. Error: ${e.message}")
             }
-            System.out.println("File ${it.name} - ${pd.getDigest()}")
+            println("File ${it.name} - ${pd.getDigest()}")
         }
     }
 }

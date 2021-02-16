@@ -7,8 +7,8 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.Properties
 import kotlin.system.exitProcess
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream
-import org.apache.commons.compress.compressors.xz.XZCompressorInputStream
+import org.tukaani.xz.XZInputStream
+import java.util.zip.GZIPInputStream
 
 class App {
     companion object {
@@ -81,9 +81,11 @@ class App {
                 if (it.name.matches(pcapBare)) {
                     Pcap.openStream(FileInputStream(it)).loop(pd)
                 } else if (it.name.matches(pcapXz)) {
-                    Pcap.openStream(XZCompressorInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
+                    Pcap.openStream(XZInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
                 } else if (it.name.matches(pcapGz)) {
-                    Pcap.openStream(GzipCompressorInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
+                    Pcap.openStream(GZIPInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
+                } else {
+                    log.error("File ${it.name} has unknown 'extension'. Can process only .pcap/.pcap.gz/.pcap.xz")
                 }
             } catch (e: IndexOutOfBoundsException) {
                 // io.pkts.buffer.BoundedInputStreamBuffer.readBytes() when reading a truncated PCAP may

@@ -37,7 +37,7 @@ class App {
         tmpProp
     }
     val dirs: Set<Path?> by lazy {
-        val dirList: MutableSet<Path?> = mutableSetOf();
+        val dirList: MutableSet<Path?> = mutableSetOf()
         configProps.forEach {(k, v) ->
             if (k.toString().startsWith("dir.")) {
                 val dir: Path = File(v.toString()).toPath()
@@ -70,7 +70,7 @@ class App {
     private val pcapBare = ".*\\.pcap$".toRegex()
     private val pcapXz = ".*\\.pcap\\.xz$".toRegex()
     private val pcapGz = ".*\\.pcap\\.gz$".toRegex()
-    val pd = PcapDigester();
+    val pd = PcapDigester()
     private fun processDir(dir: Path) {
         dir.toFile().listFiles{f -> f.isFile}.forEach fit@{ it: File ->
             if (it.length() < 24) {
@@ -78,14 +78,15 @@ class App {
                 return@fit
             }
             try {
-                if (it.name.matches(pcapBare)) {
-                    Pcap.openStream(FileInputStream(it)).loop(pd)
-                } else if (it.name.matches(pcapXz)) {
-                    Pcap.openStream(XZInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
-                } else if (it.name.matches(pcapGz)) {
-                    Pcap.openStream(GZIPInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
-                } else {
-                    log.error("File ${it.name} has unknown 'extension'. Can process only .pcap/.pcap.gz/.pcap.xz")
+                when {
+                    pcapBare.matches(it.name) ->
+                        Pcap.openStream(FileInputStream(it)).loop(pd)
+                    pcapGz.matches(it.name) ->
+                        Pcap.openStream(XZInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
+                    pcapXz.matches(it.name) ->
+                        Pcap.openStream(GZIPInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
+                    else ->
+                        log.error("File ${it.name} has unknown 'extension'. Can process only .pcap/.pcap.gz/.pcap.xz")
                 }
             } catch (e: IndexOutOfBoundsException) {
                 // io.pkts.buffer.BoundedInputStreamBuffer.readBytes() when reading a truncated PCAP may

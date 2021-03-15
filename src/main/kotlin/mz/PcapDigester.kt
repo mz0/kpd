@@ -14,7 +14,6 @@ class PcapDigester: PacketHandler {
 
     override fun nextPacket(packet: Packet?): Boolean {
         if (packet!!.hasProtocol(Protocol.IPv4)) {
-//          val time = iPv4Packet.arrivalTime
             val ipv4pkt = packet.getPacket(Protocol.IPv4) as IPv4Packet
             val dstIP = ipv4pkt.destinationIP
             val srcIP = ipv4pkt.sourceIP

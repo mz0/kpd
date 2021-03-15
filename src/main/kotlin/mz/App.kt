@@ -10,6 +10,8 @@ import kotlin.system.exitProcess
 import org.tukaani.xz.XZInputStream
 import java.util.zip.GZIPInputStream
 
+operator fun Regex.contains(text: CharSequence): Boolean = this.matches(text)
+
 class App {
     companion object {
         val log = LogManager.getLogger()
@@ -36,9 +38,13 @@ class App {
         }
         tmpProp
     }
-    val dirs: Set<Path?> by lazy {
-        val dirList: MutableSet<Path?> = mutableSetOf()
-        configProps.forEach {(k, v) ->
+    private lateinit var dirs: Set<Path>
+
+    fun init(): App {
+        log.info("Configuration:")
+        configProps.forEach {
+            (k, v) -> log.info("$k : $v")
+            val dirList: MutableSet<Path> = mutableSetOf()
             if (k.toString().startsWith("dir.")) {
                 val dir: Path = File(v.toString()).toPath()
                 if (Files.isDirectory(dir)) {
@@ -47,25 +53,14 @@ class App {
                     log.error("'$v' is not a directory!")
                 }
             }
+            dirs = dirList
         }
-        dirList
-    }
-
-    fun init(): App {
-        log.info("Configuration:")
-        configProps.forEach { (k, v) -> log.info("$k : $v") }
-        if (this.dirs.isEmpty()) log.error("No dirs to process!")
+        if (dirs.isEmpty()) log.error("No dirs to process!")
         return this
     }
 
     fun processDirs() {
-        dirs.forEach { d ->
-            if (d == null) {
-                log.error("no dir to process!")
-            } else {
-                processDir(d)
-            }
-        }
+        dirs.forEach(this@App::processDir)
     }
     private val pcapBare = ".*\\.pcap$".toRegex()
     private val pcapXz = ".*\\.pcap\\.xz$".toRegex()
@@ -78,12 +73,12 @@ class App {
                 return@fit
             }
             try {
-                when {
-                    pcapBare.matches(it.name) ->
+                when (it.name) {
+                    in pcapBare ->
                         Pcap.openStream(FileInputStream(it)).loop(pd)
-                    pcapGz.matches(it.name) ->
+                    in pcapXz ->
                         Pcap.openStream(XZInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
-                    pcapXz.matches(it.name) ->
+                    in pcapGz ->
                         Pcap.openStream(GZIPInputStream(BufferedInputStream(FileInputStream(it)))).loop(pd)
                     else ->
                         log.error("File ${it.name} has unknown 'extension'. Can process only .pcap/.pcap.gz/.pcap.xz")

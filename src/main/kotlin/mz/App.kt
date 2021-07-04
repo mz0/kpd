@@ -8,17 +8,19 @@ import java.nio.file.Path
 import java.util.Properties
 import kotlin.system.exitProcess
 import org.tukaani.xz.XZInputStream
+import java.sql.DriverManager
+import java.sql.SQLException
 import java.util.zip.GZIPInputStream
 
 operator fun Regex.contains(text: CharSequence): Boolean = this.matches(text)
 
 class App {
     companion object {
-        val log = LogManager.getLogger()
+        val log = LogManager.getLogger("Z")
     }
     val version = "0.1"
-    val configFile = "application.properties"
-    val configProps: Properties by lazy {
+    private val configFile = "application.properties"
+    private val configProps: Properties by lazy {
         val tmpProp = Properties()
         log.info("Current dir (user.dir): ${System.getProperty("user.dir")}")
         try {
@@ -65,9 +67,10 @@ class App {
     private val pcapBare = ".*\\.pcap$".toRegex()
     private val pcapXz = ".*\\.pcap\\.xz$".toRegex()
     private val pcapGz = ".*\\.pcap\\.gz$".toRegex()
-    val pd = PcapDigester()
+    private val pd = PcapDigester()
     private fun processDir(dir: Path) {
-        dir.toFile().listFiles{f -> f.isFile}.forEach fit@{ it: File ->
+        println("Processing $dir start")
+        dir.toFile().listFiles{f -> f.isFile}.forEach fit@{
             if (it.length() < 24) {
                 log.warn("File ${it.name} has less than 24 bytes.")
                 return@fit
@@ -88,12 +91,36 @@ class App {
                 // result in e.g. 'Not enough bytes left in the stream. Wanted 60 but only read 16'
                 log.warn("Reading ${it.name}. Error: ${e.message}")
             }
-            println("File ${it.name} - ${pd.getDigest()}")
+            print("File ${it.name} - ${pd.getPacketCount()} packets; ")
         }
+        println("\nFinished $dir")
     }
 }
 
 fun main(args: Array<String>) {
     val app = App().init()
     app.processDirs()
+
+    if (false) sqlServerCheck()
+}
+
+fun sqlServerCheck() {
+    val connUrl = "jdbc:sqlserver://localhost:14331;databaseName=shsha;user=shsha;password=Cook1770"
+    val insertStmt = """INSERT INTO pkt ("id", captDay, pktBytes) VALUES (?, 18697, ?)"""
+    try {
+        DriverManager.getConnection(connUrl).use {
+            it.prepareStatement(insertStmt).use { s ->
+                val c2048 = "0123456789ABCDEF".repeat(16*4*2) // 16*16*4*2 = 2048
+                var longtext = c2048
+                for (i in 1..6) {
+                    s.setInt(1, 3 + i)
+                    s.setString(2, longtext)
+                    s.execute()
+                    longtext += longtext // pkt2 4096, pkt3 8192, pkt4 16384, pkt5 32768, pkt6 65536
+                }
+            }
+        }
+    } catch (e: SQLException) {
+        println(e)
+    }
 }
